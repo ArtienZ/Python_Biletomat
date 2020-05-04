@@ -2,7 +2,7 @@ from tkinter import *
 import sqlite3
 
 class MainWindow(Tk):
-    frames = {}
+
     def __init__(self,*args,**kwargs):
         Tk.__init__(self,*args,**kwargs)
         self.geometry("800x600")
@@ -11,19 +11,23 @@ class MainWindow(Tk):
         container.pack(side="top",fill="both",expand=True)
         container.grid_rowconfigure(0,weight=1)
         container.grid_columnconfigure(0,weight=1)
-        self.app_data = {"TotalCost": DoubleVar()}
+        self.app_data = {"TotalCost": DoubleVar(),
+                         "TotalCostZl": DoubleVar()
+                         }
         # frame=TicketSelect(container,self)
         # frame.grid(row=0, column=0, sticky="nsew")
         # self.frames[TicketSelect]=frame
         # frame=Payment(container,self)
         # frame.grid(row=0, column=0, sticky="nsew")
         # self.frames[Payment]=frame
+        self.frames = {}
         for Frame_Name in (TicketSelect,Payment):
             frame=Frame_Name(container,self)
             self.frames[Frame_Name]=frame
             frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame(TicketSelect)
     def show_frame(self,cont):
+        self.app_data["TotalCostZl"].set(f"{'%.2f' % (self.app_data['TotalCost'].get()/100.0)} zł")
         frame=self.frames[cont]
         frame.tkraise()
     def get_page(self, page_class):
@@ -44,7 +48,6 @@ class TicketSelect(Frame):
         self.CreateLabels()
         self.cena=IntVar()
         self.cena.set(20)
-        print(self.cena.get())
         Button(self, text="Zakoncz", width=20, command=self.close_window).grid(row=9, column=0, sticky=W)
         Button(self, text="Platnosc", width=20,command=lambda: controller.show_frame(Payment)).grid(row=9, column=5, sticky=E)
         self.TotalCost.grid(column=5, row=8)
@@ -85,7 +88,7 @@ class TicketSelect(Frame):
         p.execute('SELECT cena FROM bilety ORDER BY Id_biletu')
         Records = p.fetchall()
         for Row in Records:
-            self.TicketsPrices.append(Row[0]/100)
+            self.TicketsPrices.append(Row[0])
     def clickplus(self,number):
         temp=self.ticketsarray[number].get()
         self.ticketsarray[number].set(temp+1)
@@ -105,7 +108,7 @@ class TicketSelect(Frame):
         for j in range(len(self.ticketsarray)):
             temp += self.ticketsarray[j].get() * self.TicketsPrices[j]
         self.TotalCostZl.set(temp)
-        self.TotalCost.configure(text=f"{str('%.2f' % self.TotalCostZl.get())} zl")
+        self.TotalCost.configure(text=f"{str('%.2f' % (float(self.TotalCostZl.get())/100))} zl")
 
     def close_window(self):
         self.master.destroy()
@@ -122,17 +125,23 @@ class Payment(Frame):
         self.TotalCash=DoubleVar()
         self.Page1=self.controller.get_page(TicketSelect)
         self.DATA2 = self.controller.app_data["TotalCost"]
-        self.CoinsIn=Label(self, width=8, text=" ")
+        self.DATA3 = self.controller.app_data["TotalCostZl"]
+        self.CoinsIn=[]
+        self.ToPay = Label(self, font="Helvetica 14 bold",textvariable=self.DATA3)
+        self.InMachine = Label(self,font="Helvetica 14 bold", text="Wrzucono już: 0.0 zł")
         self.CoinMenu()
         Button(self, text="Zakończ", width=8, command=self.close_window2).grid(row=9, column=0)
         Button(self, text="Zapłać", width=8, command= self.Pay).grid(row=9, column=1)
         Button(self, text="Powrót", width=8, command=lambda: controller.show_frame(TicketSelect)).grid(row=9,column=5)
-        self.CoinsIn.grid(row=8,column=5)
+        self.ToPay.grid(row=2, column=4)
+        self.InMachine.grid(row=3, column=4)
     def CoinMenu(self):
+
         self.c = self.conn.cursor()
         self.b=self.conn.cursor()
         self.c.execute("SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr FROM monety ORDER BY ID_monety")
         self.b.execute("SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr FROM banknoty ORDER BY Id_banknotu")
+
         RecordsC = self.c.fetchall()
         RecordsB=self.b.fetchall()
         i=0
@@ -149,20 +158,22 @@ class Payment(Frame):
             i+=1
         Label(self,font = "Helvetica 14",text="Ile monet chcesz wrzucić? ").grid(row=0,column=4)
         Entry(self, width=8,font = "Helvetica 14 bold",justify=CENTER, textvariable=self.HowManyCoins).grid(row=1,column=4)
-        self.HowManyCoins.trace("w",lambda _:self.WhenTotalChange(self.HowManyCoins))
-        Label(self,font = "Helvetica 14 bold",textvariable=self.DATA2).grid(row=2,column=4)
+
     def AddCoin(self,type):
-        self.CoinsIn.configure(text=f"{type/100} zł")
-        self.AmountOfCoins.append(type/100)
+        self.AmountOfCoins.append(type)
         self.TotalCash.set(sum(self.AmountOfCoins))
+        self.InMachine.configure(text=f"Wrzucono już: {'%.2f' % (sum(self.AmountOfCoins)/100)} zł")
+        # temp=self.DATA2.get()
+        # temp-=type
+        # self.DATA2.set(temp)
+        # self.DATA3.set(f"{'%.2f' % (self.DATA2.get()/100.0)} zł")
     def Pay(self):
         print(f"Wrzucone monety {self.AmountOfCoins} kwota:{sum(self.AmountOfCoins)}")
     def WhenTotalChange(self):
-        self.HowManyCoins.update_idletasks()
+        self.DATA2.update_idletasks()
     def close_window2(self):
         self.master.destroy()
         exit()
-
 
 App_gui =MainWindow()
 App_gui.mainloop()
