@@ -1,3 +1,5 @@
+# Automat biletowy MPK
+
 ## 1. Opis zadania
   * Automat przechowuje informacje o monetach/banknotach znajdujących się w
 nim (1, 2, 5, 10, 20, 50gr, 1, 2, 5, 10, 20, 50zł) [dziedziczenie: można napisać
