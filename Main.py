@@ -1,11 +1,26 @@
 from tkinter import *
 import sqlite3
-
+def Warning(msg,op=0):
+    popup=Tk()
+    App_gui.withdraw()
+    def LeaveWar():
+        if op==0:
+            popup.destroy()
+            App_gui.deiconify()
+        else:
+            popup.destroy()
+            App_gui.destroy()
+    popup.wm_title("POWIADOMIENIE ")
+    label=Label(popup,text=msg,font="Helvetica 20 bold")
+    label.pack(side="top",fill='x',pady=10)
+    B1=Button(popup,text="Powrót",font="Helvetica 16",command=LeaveWar)
+    B1.pack()
+    popup.mainloop()
 class MainWindow(Tk):
 
     def __init__(self,*args,**kwargs):
         Tk.__init__(self,*args,**kwargs)
-        self.geometry("800x600")
+        self.geometry("600x400")
         self.title("Automat biletowy MPK")
         container=Frame(self)
         container.pack(side="top",fill="both",expand=True)
@@ -46,8 +61,6 @@ class TicketSelect(Frame):
         self.TotalCost = Label(self, width=8, text=f"{self.TotalCostZl} zł")
         self.GetTicketsPrices()
         self.CreateLabels()
-        self.cena=IntVar()
-        self.cena.set(20)
         Button(self, text="Zakoncz", width=20, command=self.close_window).grid(row=9, column=0, sticky=W)
         Button(self, text="Platnosc", width=20,command=lambda: controller.show_frame(Payment)).grid(row=9, column=5, sticky=E)
         self.TotalCost.grid(column=5, row=8)
@@ -138,37 +151,76 @@ class Payment(Frame):
     def CoinMenu(self):
 
         self.c = self.conn.cursor()
-        self.b=self.conn.cursor()
-        self.c.execute("SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr FROM monety ORDER BY ID_monety")
-        self.b.execute("SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr FROM banknoty ORDER BY Id_banknotu")
-
-        RecordsC = self.c.fetchall()
-        RecordsB=self.b.fetchall()
+        self.b= self.conn.cursor()
+        self.c.execute("SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr FROM monety ORDER BY monety.wartosc_w_gr DESC")
+        self.b.execute("SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr FROM banknoty ORDER BY banknoty.wartosc_w_gr DESC")
+        self.RecordsC = self.c.fetchall()
+        self.RecordsB=self.b.fetchall()
         i=0
         j=0
-        for Row in RecordsC:
+        for Row in self.RecordsC:
             self.MenuButtons.append(Button(self,bg='lightgray',command=lambda t=int(Row[2]):self.AddCoin(t),text=f"{Row[0]}",width=8,height=3).grid(row=j,column=i,sticky=W,pady=5,padx=5))
             i+=1
             if i%3==0:
                 j+=1
                 i=0
         i=0
-        for Row in RecordsB:
+        for Row in self.RecordsB:
             self.MenuButtons.append(Button(self,bg='lightgray',command=lambda t=int(Row[2]):self.AddCoin(t), text=f"{Row[0]}", width=8, height=3).grid(row=j, column=i, sticky=W, pady=5, padx=5))
             i+=1
         Label(self,font = "Helvetica 14",text="Ile monet chcesz wrzucić? ").grid(row=0,column=4)
         Entry(self, width=8,font = "Helvetica 14 bold",justify=CENTER, textvariable=self.HowManyCoins).grid(row=1,column=4)
-
     def AddCoin(self,type):
-        self.AmountOfCoins.append(type)
+        for i in range(0,self.HowManyCoins.get()):
+            self.AmountOfCoins.append(type)
         self.TotalCash.set(sum(self.AmountOfCoins))
         self.InMachine.configure(text=f"Wrzucono już: {'%.2f' % (sum(self.AmountOfCoins)/100)} zł")
-        # temp=self.DATA2.get()
-        # temp-=type
-        # self.DATA2.set(temp)
-        # self.DATA3.set(f"{'%.2f' % (self.DATA2.get()/100.0)} zł")
     def Pay(self):
-        print(f"Wrzucone monety {self.AmountOfCoins} kwota:{sum(self.AmountOfCoins)}")
+        if self.TotalCash.get()<self.DATA2.get():
+            Warning("Wrzuciłeś za małą kwotę")
+        else:
+            AvalibleCash = [[0 for x in range(2)] for y in range(len(self.RecordsB)+len(self.RecordsC))]
+            i=0
+            for Row in self.RecordsB:
+                AvalibleCash[i][0]=Row[2]
+                AvalibleCash[i][1]=Row[1]
+                i+=1
+            for Row in self.RecordsC:
+                AvalibleCash[i][0] = Row[2]
+                AvalibleCash[i][1] = Row[1]
+                i += 1
+            print(AvalibleCash)
+            for i in self.AmountOfCoins:
+                for j in range(0,len(AvalibleCash)):
+                    if i==AvalibleCash[j][0]:
+                        AvalibleCash[j][1]+=1
+                        break
+            Change=self.TotalCash.get()-self.DATA2.get()
+            ChangeTemp=Change
+            i=0
+            while Change>0:
+                if AvalibleCash[i][0]<=Change:
+                    temp=Change//AvalibleCash[i][0]
+                    Change-=(AvalibleCash[i][0]*temp)
+                    AvalibleCash[i][1]-=1
+                    print(f"{AvalibleCash[i][0]} {temp} {Change}")
+                else:
+                    i+=1
+            print(AvalibleCash)
+            print(Change)
+            self.p = self.conn.cursor()
+            i=0
+            for de,am in AvalibleCash:
+                print(len(self.RecordsB))
+                print(f"{de}    {am}")
+                if i < len(self.RecordsB):
+                    self.p.execute("""UPDATE banknoty SET ilosc=? WHERE wartosc_w_gr=?""",(am,de))
+                else:
+                    self.p.execute("""UPDATE monety SET ilosc=? WHERE wartosc_w_gr=?""",(am,de))
+                i+=1
+            self.conn.commit()
+            print(f"Wrzucone monety {self.AmountOfCoins} kwota:{sum(self.AmountOfCoins)}")
+            Warning(f"Dziękujemy za zakup \n Wydano: {'%.2f' % (ChangeTemp/100.)}",1)
     def WhenTotalChange(self):
         self.DATA2.update_idletasks()
     def close_window2(self):
