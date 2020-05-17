@@ -17,7 +17,11 @@ monet (domyślnie jedna).
   * Brak reszty/może wydać: wyskakuje okienko z informacją o zakupach, wydaje
     resztę (dolicza wrzucone monety, odlicza wydane jako reszta), wraca do
     wyboru biletów.
+<<<<<<< HEAD
   * Nie może wydać: wyskakuje okienko z napisem "Tylko odliczona kwota"
+=======
+ 1.8. Nie może wydać: wyskakuje okienko z napisem "Tylko odliczona kwota"
+>>>>>>> master
     oraz zwraca włożone monety.
 ## 2. Testy
  * Bilet kupiony za odliczoną kwotę - oczekiwany brak reszty.
