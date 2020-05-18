@@ -5,7 +5,7 @@
 
 """
 import sqlite3
-import tkinter
+import tkinter as tk
 import sys
 
 
@@ -16,7 +16,7 @@ def warning(msg, option=0):
     :param option: Warning option default 0.
     :return: Create a new popup window and making inactive mainwindow
     """
-    popup = tkinter.Tk()
+    popup = tk.Tk()
     APP_GUI.withdraw()
 
     def leave_war():
@@ -33,14 +33,14 @@ def warning(msg, option=0):
             APP_GUI.destroy()
 
     popup.wm_title("POWIADOMIENIE ")
-    label = tkinter.Label(popup, text=msg, font="Helvetica 20 bold")
+    label = tk.Label(popup, text=msg, font="Helvetica 20 bold")
     label.pack(side="top", fill='x', pady=10)
-    go_back = tkinter.Button(popup, text="Powrót", font="Helvetica 16", command=leave_war)
+    go_back = tk.Button(popup, text="Powrót", font="Helvetica 16", command=leave_war)
     go_back.pack()
     popup.mainloop()
 
 
-class MainWindow(tkinter.Tk):
+class MainWindow(tk.Tk):
     """
     class for mainwindow of biletomat
     """
@@ -51,15 +51,15 @@ class MainWindow(tkinter.Tk):
         :param args:
         :param kwargs:
         """
-        tkinter.Tk.__init__(self, *args, **kwargs)
+        tk.Tk.__init__(self, *args, **kwargs)
         self.geometry("600x400")
         self.title("Automat biletowy MPK")
-        container = tkinter.Frame(self)
+        container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
-        self.app_data = {"total_cost": tkinter.DoubleVar(),
-                         "total_costzl": tkinter.DoubleVar()
+        self.app_data = {"total_cost": tk.DoubleVar(),
+                         "total_costzl": tk.DoubleVar()
                          }
         # frame=TicketSelect(container,self)
         # frame.grid(row=0, column=0, sticky="nsew")
@@ -93,7 +93,7 @@ class MainWindow(tkinter.Tk):
         return self.frames[page_class]
 
 
-class TicketSelect(tkinter.Frame):
+class TicketSelect(tk.Frame):
     """
     1st frame of app
     menu with tickets
@@ -105,30 +105,34 @@ class TicketSelect(tkinter.Frame):
         :param parent: parent window
         :param controller: controller used to move between frames
         """
-        tkinter.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.total_costzl = self.controller.app_data["total_cost"]
-        self.tickets = [tkinter.IntVar(), tkinter.IntVar(), tkinter.IntVar(), tkinter.IntVar(), tkinter.IntVar(),
-                        tkinter.IntVar()]
+        self.tickets = [tk.IntVar(),
+                        tk.IntVar(),
+                        tk.IntVar(),
+                        tk.IntVar(),
+                        tk.IntVar(),
+                        tk.IntVar(),]
         self.labels = []
         self.tickets_labels = []
         self.tickets_prices = []
         self.conn = sqlite3.connect('automat.db')
-        self.total_cost = tkinter.Label(self, width=8, text=f"{self.total_costzl} zł")
+        self.total_cost = tk.Label(self, width=8, text=f"{self.total_costzl} zł")
         self.get_tickets_prices()
         self.create_labels()
-        close_program = tkinter.Button(self, text="Zakoncz", width=20, command=self.close_frame)
+        close_program = tk.Button(self, text="Zakoncz", width=20, command=self.close_frame)
         close_program.grid(row=9, column=0,
-                           sticky=tkinter.W)
-        go_to_payment = tkinter.Button(self, text="Platnosc", width=20, command=lambda: controller.show_frame(Payment))
+                           sticky=tk.W)
+        go_to_payment = tk.Button(self, text="Platnosc", width=20, command=lambda: controller.show_frame(Payment))
         go_to_payment.grid(row=9,
                            column=5,
-                           sticky=tkinter.E)
+                           sticky=tk.E)
         self.total_cost.grid(column=5, row=8)
         self.conn.commit()
 
-    def on_change(self, a=None, b=None, c=None):
+    def on_change(self, first_arg=None, second_arg=None, thrird_arg=None):
         """
         When entry value change it also change a variable value
         and check if entry value is greater than 0
@@ -137,6 +141,9 @@ class TicketSelect(tkinter.Frame):
         :param c:
         :return: no return
         """
+        del first_arg
+        del second_arg
+        del thrird_arg
         for k in range(0, len(self.tickets)):
             try:
                 temp = self.tickets[k].get()
@@ -162,18 +169,18 @@ class TicketSelect(tkinter.Frame):
         records = self.coins_cursor.fetchall()
         self.i = 0
         for row in records:
-            self.tickets.append(tkinter.IntVar())
+            self.tickets.append(tk.IntVar())
             self.tickets[self.i].set(0)
-            self.labels.append(tkinter.Label(self, text=f"{row[0]} {row[1] / 100:.2f} zł"))
+            self.labels.append(tk.Label(self, text=f"{row[0]} {row[1] / 100:.2f} zł"))
             self.labels[self.i].grid(column=0, row=self.i + 2, pady=15)
             self.tickets_labels.append(
-                tkinter.Entry(self, justify=tkinter.CENTER, command=self.cal_total_cost(), text="0", width=5,
-                              textvariable=self.tickets[self.i]))
+                tk.Entry(self, justify=tk.CENTER, command=self.cal_total_cost(), text="0", width=5,
+                         textvariable=self.tickets[self.i]))
             self.tickets_labels[self.i].grid(column=4, row=self.i + 2, pady=15)
-            plus_button = tkinter.Button(self, text="+", width=4, command=lambda i=self.i: self.click_plus(i))
-            plus_button.grid(row=self.i + 2, column=3, sticky=tkinter.W)
-            minus_button = tkinter.Button(self, text="-", width=4, command=lambda i=self.i: self.click_minus(i))
-            minus_button.grid(row=self.i + 2, column=5, sticky=tkinter.W)
+            plus_button = tk.Button(self, text="+", width=4, command=lambda i=self.i: self.click_plus(i))
+            plus_button.grid(row=self.i + 2, column=3, sticky=tk.W)
+            minus_button = tk.Button(self, text="-", width=4, command=lambda i=self.i: self.click_minus(i))
+            minus_button.grid(row=self.i + 2, column=5, sticky=tk.W)
             self.tickets[self.i].trace("w", self.on_change)
             self.i = self.i + 1
 
@@ -234,30 +241,30 @@ class TicketSelect(tkinter.Frame):
         sys.exit()
 
 
-class Payment(tkinter.Frame):
+class Payment(tk.Frame):
     """
     Payment for selected tickets
     """
 
     def __init__(self, parent, controller):
-        tkinter.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
         self.controller = controller
         self.conn = sqlite3.connect('automat.db')
         self.amount_of_coins = []
         self.menu_buttons = []
-        self.how_many_coins = tkinter.IntVar()
+        self.how_many_coins = tk.IntVar()
         self.how_many_coins.set(1)
-        self.total_cash = tkinter.DoubleVar()
+        self.total_cash = tk.DoubleVar()
         self.total_cost = self.controller.app_data["total_cost"]
         self.total_costzl = self.controller.app_data["total_costzl"]
         self.coins_in = []
-        self.to_pay = tkinter.Label(self, font="Helvetica 14 bold", textvariable=self.total_costzl)
-        self.in_machine = tkinter.Label(self, font="Helvetica 14 bold", text="Wrzucono już: 0.0 zł")
+        self.to_pay = tk.Label(self, font="Helvetica 14 bold", textvariable=self.total_costzl)
+        self.in_machine = tk.Label(self, font="Helvetica 14 bold", text="Wrzucono już: 0.0 zł")
         self.coin_menu()
-        tkinter.Button(self, text="Zakończ", width=8, command=self.close_frame).grid(row=9, column=0)
-        tkinter.Button(self, text="Zapłać", width=8, command=self.pay).grid(row=9, column=1)
-        tkinter.Button(self, text="Powrót", width=8, command=lambda: controller.show_frame(TicketSelect)).grid(row=9,
-                                                                                                               column=5)
+        tk.Button(self, text="Zakończ", width=8, command=self.close_frame).grid(row=9, column=0)
+        tk.Button(self, text="Zapłać", width=8, command=self.pay).grid(row=9, column=1)
+        tk.Button(self, text="Powrót", width=8, command=lambda: controller.show_frame(TicketSelect)).grid(row=9,
+                                                                                                          column=5)
         self.to_pay.grid(row=2, column=4)
         self.in_machine.grid(row=3, column=4)
 
@@ -270,18 +277,24 @@ class Payment(tkinter.Frame):
         self.coins_cursor = self.conn.cursor()
         self.note_cursor = self.conn.cursor()
         self.coins_cursor.execute(
-            "SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr FROM monety ORDER BY monety.wartosc_w_gr DESC")
+            """SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr 
+            FROM monety 
+            ORDER BY monety.wartosc_w_gr DESC"""
+        )
         self.note_cursor.execute(
-            "SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr FROM banknoty ORDER BY banknoty.wartosc_w_gr DESC")
+            """SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr 
+            FROM banknoty 
+            ORDER BY banknoty.wartosc_w_gr DESC"""
+        )
         self.records_coins = self.coins_cursor.fetchall()
         self.records_notes = self.note_cursor.fetchall()
         i = 0
         j = 0
         for res in self.records_coins:
             self.menu_buttons.append(
-                tkinter.Button(self, bg='lightgray', command=lambda t=int(res[2]): self.add_coin(t), text=f"{res[0]}",
-                               width=8,
-                               height=3).grid(row=j, column=i, sticky=tkinter.W, pady=5, padx=5))
+                tk.Button(self, bg='lightgray', command=lambda t=int(res[2]): self.add_coin(t), text=f"{res[0]}",
+                          width=8,
+                          height=3).grid(row=j, column=i, sticky=tk.W, pady=5, padx=5))
             i += 1
             if i % 3 == 0:
                 j += 1
@@ -289,13 +302,13 @@ class Payment(tkinter.Frame):
         i = 0
         for res in self.records_notes:
             self.menu_buttons.append(
-                tkinter.Button(self, bg='lightgray', command=lambda t=int(res[2]): self.add_coin(t), text=f"{res[0]}",
-                               width=8,
-                               height=3).grid(row=j, column=i, sticky=tkinter.W, pady=5, padx=5))
+                tk.Button(self, bg='lightgray', command=lambda t=int(res[2]): self.add_coin(t), text=f"{res[0]}",
+                          width=8,
+                          height=3).grid(row=j, column=i, sticky=tk.W, pady=5, padx=5))
             i += 1
-        tkinter.Label(self, font="Helvetica 14", text="Ile monet chcesz wrzucić? ").grid(row=0, column=4)
-        tkinter.Entry(self, width=8, font="Helvetica 14 bold", justify=tkinter.CENTER,
-                      textvariable=self.how_many_coins).grid(row=1, column=4)
+        tk.Label(self, font="Helvetica 14", text="Ile monet chcesz wrzucić? ").grid(row=0, column=4)
+        tk.Entry(self, width=8, font="Helvetica 14 bold", justify=tk.CENTER,
+                 textvariable=self.how_many_coins).grid(row=1, column=4)
 
     def add_coin(self, coin_type):
         """
@@ -353,9 +366,15 @@ class Payment(tkinter.Frame):
                 print(len(self.records_notes))
                 print(f"{denom}    {amout}")
                 if i < len(self.records_notes):
-                    p_cursor.execute("""UPDATE banknoty SET ilosc=? WHERE wartosc_w_gr=?""", (amout, denom))
+                    p_cursor.execute("""UPDATE banknoty SET ilosc=? 
+                    WHERE wartosc_w_gr=?""",
+                                     (amout, denom)
+                                     )
                 else:
-                    p_cursor.execute("""UPDATE monety SET ilosc=? WHERE wartosc_w_gr=?""", (amout, denom))
+                    p_cursor.execute("""UPDATE monety 
+                    SET ilosc=? 
+                    WHERE wartosc_w_gr=?""",
+                                     (amout, denom))
                 i += 1
             self.conn.commit()
             print(f"Wrzucone monety {self.amount_of_coins} kwota:{sum(self.amount_of_coins)}")
