@@ -8,6 +8,24 @@ import sqlite3
 import tkinter as tk
 import sys
 
+TICKET_NAME = 0
+TICKET_PRICE = 1
+NOMINAL = 2
+VALUE_IN_GR = 0
+AMOUNT_OF_COINS = 1
+
+
+class AvailableCash(): # pylint: disable=too-few-public-methods
+    """
+    Available cash that is in machine for change
+    """
+    def __init__(self):
+        """
+        init a element that have own value in grosz and amount of it
+        """
+        self.value_in_gr = 0
+        self.amount_of_coins = 0
+
 
 class MainWindow(tk.Tk):
     """
@@ -29,12 +47,6 @@ class MainWindow(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
         self.total_cost_main = tk.DoubleVar()
         self.total_costzl_main = tk.DoubleVar()
-        # frame=TicketSelect(container,self)
-        # frame.grid(row=0, column=0, sticky="nsew")
-        # self.frames[TicketSelect]=frame
-        # frame=Payment(container,self)
-        # frame.grid(row=0, column=0, sticky="nsew")
-        # self.frames[Payment]=frame
         self.frames = {}
         for frame_name in (TicketSelect, Payment):
             frame = frame_name(container, self)
@@ -81,7 +93,8 @@ class MainWindow(tk.Tk):
                 window.deiconify()
             else:
                 popup.destroy()
-                window.destroy()
+                self.destroy()
+                MainWindow().mainloop()
 
         popup.wm_title("POWIADOMIENIE ")
         label = tk.Label(popup, text=msg, font="Helvetica 20 bold")
@@ -115,7 +128,6 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         self.labels = []
         self.tickets_labels = []
         self.tickets_prices = []
-        # self.conn = sqlite3.connect('automat.db')
         self.total_cost = tk.Label(self, width=8, text=f"{self.total_costzl} zł")
         self.get_tickets_prices()
         self.create_labels()
@@ -128,7 +140,6 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
                            column=5,
                            sticky=tk.E)
         self.total_cost.grid(column=5, row=8)
-        # self.conn.commit()
 
     def on_change(self, first_arg=None, second_arg=None, thrird_arg=None):
         """
@@ -137,18 +148,17 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         :return: no return
         """
         del first_arg, second_arg, thrird_arg
-        k = 0
         temp = None
-        for k, _ in enumerate(self.tickets):
+        for ticket, label in zip(self.tickets, self.tickets_labels):
             try:
-                temp = self.tickets[k].get()
+                temp = ticket.get()
             except tk.TclError:
-                self.tickets[k].set(0)
+                ticket.set(0)
             else:
                 if temp < 0:
-                    self.tickets[k].set(0)
-                self.tickets_labels[k].update_idletasks()
-        self.tickets_labels[k].update_idletasks()
+                    ticket.set(0)
+                label.update_idletasks()
+        self.tickets_labels[-1].update_idletasks()
         self.count_total_cost()
 
     def create_labels(self):
@@ -160,14 +170,15 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         del self.tickets_labels[:]
         del self.tickets[:]
         conn = sqlite3.connect('automat.db')
-        print(len(self.tickets))
         coins_cursor = conn.cursor()
-        coins_cursor.execute('SELECT nazwa,cena FROM bilety ORDER BY Id_biletu')
-        records = coins_cursor.fetchall()
-        for i, row in enumerate(records):
+        for i, row in enumerate(coins_cursor.execute(
+                """SELECT nazwa,cena FROM bilety ORDER BY Id_biletu"""
+        )):
             self.tickets.append(tk.IntVar())
             self.tickets[i].set(0)
-            self.labels.append(tk.Label(self, text=f"{row[0]} {row[1] / 100:.2f} zł"))
+            self.labels.append(tk.Label(
+                self, text=f"{row[TICKET_NAME]} {row[TICKET_PRICE] / 100:.2f} zł"
+            ))
             self.labels[i].grid(column=0, row=i + 2, pady=15)
             temp_entry = tk.Entry(self, justify=tk.CENTER, command=self.count_total_cost(),
                                   text="0", width=5,
@@ -180,7 +191,6 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
                                      command=lambda j=i: self.click_minus(j))
             minus_button.grid(row=i + 2, column=5, sticky=tk.W)
             self.tickets[i].trace("w", self.on_change)
-        conn.commit()
 
     def get_tickets_prices(self):
         """
@@ -190,11 +200,8 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         del self.tickets_prices[:]
         conn = sqlite3.connect('automat.db')
         p_cursor = conn.cursor()
-        p_cursor.execute('SELECT cena FROM bilety ORDER BY Id_biletu')
-        records = p_cursor.fetchall()
-        for row in records:
-            self.tickets_prices.append(row[0])
-        conn.commit()
+        for row in p_cursor.execute('SELECT nazwa, cena FROM bilety ORDER BY Id_biletu'):
+            self.tickets_prices.append(row[TICKET_PRICE])
 
     def click_plus(self, number):
         """
@@ -204,8 +211,6 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         """
         temp = self.tickets[number].get()
         self.tickets[number].set(temp + 1)
-        # self.tickets_labels[number].delete(0, END)
-        # self.tickets_labels[number].insert(0, self.tickets[number].get())
         self.count_total_cost()
 
     def click_minus(self, number):
@@ -217,18 +222,15 @@ class TicketSelect(tk.Frame):  # pylint: disable=too-many-ancestors
         temp = self.tickets[number].get()
         if temp > 0:
             self.tickets[number].set(temp - 1)
-            # self.tickets_labels[number].delete(0,END)
-            # self.tickets_labels[number].insert(0,self.tickets[number].get())
         self.count_total_cost()
-
     def count_total_cost(self):
         """
         calculates the total price for selected tickets
         :return:
         """
         temp = 0.0
-        for j in range(len(self.tickets)):
-            temp += self.tickets[j].get() * self.tickets_prices[j]
+        for ticket, price in zip(self.tickets, self.tickets_prices):
+            temp += ticket.get() * price
         self.total_costzl.set(temp)
         self.total_cost.configure(text=f"{(self.total_costzl.get() / 100):.2f} zl")
 
@@ -257,7 +259,6 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         self.total_cash = tk.DoubleVar()
         self.total_cost = controller.total_cost_main
         self.total_costzl = controller.total_costzl_main
-        self.coins_in = []
         self.to_pay = tk.Label(self, font="Helvetica 14 bold", textvariable=self.total_costzl)
         self.in_machine = tk.Label(self, font="Helvetica 14 bold", text="Wrzucono już: 0.0 zł")
         self.coin_menu()
@@ -275,26 +276,18 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         :return:
         """
         conn = sqlite3.connect('automat.db')
-        self.coins_cursor = conn.cursor()
-        self.note_cursor = conn.cursor()
-        self.coins_cursor.execute(
-            """SELECT monety.nominal,monety.ilosc,monety.wartosc_w_gr
-            FROM monety
-            ORDER BY monety.wartosc_w_gr DESC"""
-        )
-        self.note_cursor.execute(
-            """SELECT banknoty.nominal,banknoty.ilosc,banknoty.wartosc_w_gr
-            FROM banknoty
-            ORDER BY banknoty.wartosc_w_gr DESC"""
-        )
-        self.records_coins = self.coins_cursor.fetchall()
-        self.records_notes = self.note_cursor.fetchall()
+        coins_cursor = conn.cursor()
+        note_cursor = conn.cursor()
         i = 0
         j = 0
         res = None
-        for res in self.records_coins:
-            temp_button = tk.Button(self, text=f"{res[0]}", width=8, height=3,
-                                    command=lambda t=int(res[2]): self.add_coin(t))
+        for res in coins_cursor.execute(
+                """SELECT monety.wartosc_w_gr,monety.ilosc,monety.nominal
+                FROM monety
+                ORDER BY monety.wartosc_w_gr DESC"""
+        ):
+            temp_button = tk.Button(self, text=f"{res[NOMINAL]}", width=8, height=3,
+                                    command=lambda t=int(res[VALUE_IN_GR]): self.add_coin(t))
             temp_button.grid(row=j, column=i, sticky=tk.W, pady=5, padx=5)
             self.menu_buttons.append(temp_button)
             i += 1
@@ -302,9 +295,13 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
                 j += 1
                 i = 0
         i = 0
-        for res in self.records_notes:
-            temp_button = tk.Button(self, text=f"{res[0]}", width=8, height=3,
-                                    command=lambda t=int(res[2]): self.add_coin(t))
+        for res in note_cursor.execute(
+                """SELECT banknoty.wartosc_w_gr,banknoty.ilosc,banknoty.nominal
+                FROM banknoty
+                ORDER BY banknoty.wartosc_w_gr DESC"""
+        ):
+            temp_button = tk.Button(self, text=f"{res[NOMINAL]}", width=8, height=3,
+                                    command=lambda t=int(res[VALUE_IN_GR]): self.add_coin(t))
             temp_button.grid(row=j, column=i, sticky=tk.W, pady=5, padx=5)
             self.menu_buttons.append(temp_button)
 
@@ -312,7 +309,6 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
             tk.Label(self, text="Ile monet chcesz wrzucić? ").grid(row=0, column=4)
             tk.Entry(self, width=8, justify=tk.CENTER,
                      textvariable=self.how_many_coins).grid(row=1, column=4)
-        conn.commit()
 
     def add_coin(self, coin_type):
         """
@@ -320,10 +316,18 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         :param coin_type: type of coin
         :return:
         """
-        for _ in range(0, self.how_many_coins.get()):
-            self.amount_of_coins.append(coin_type)
-        self.total_cash.set(sum(self.amount_of_coins))
-        self.in_machine.configure(text=f"Wrzucono już: {(sum(self.amount_of_coins) / 100):.2f} zł")
+        try:
+            if coin_type <= 0:
+                raise ValueError()
+        except ValueError:
+            print(f" Nie ma monety o wartosci: {coin_type/100}  zł")
+        else:
+            for _ in range(0, self.how_many_coins.get()):
+                self.amount_of_coins.append(coin_type)
+            self.total_cash.set(sum(self.amount_of_coins))
+            if self.total_cash.get() >= self.controller.total_cost_main.get():
+                self.pay()
+            self.in_machine.configure(text=f"Wrzucono już: {(sum(self.amount_of_coins) / 100):.2f} zł")
 
     def pay(self):
         """
@@ -333,36 +337,51 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         :return:
         """
         if self.total_cash.get() < self.total_cost.get():
-            self.controller.warning("Wrzuciłeś za małą kwotę")
+            self.controller.warning("Wrzuciłeś za mało piniędzy")
         else:
-            temp_sum = len(self.records_notes) + len(self.records_coins)
-            avalible_cash = [[0 for _ in range(2)] for _ in range(temp_sum)]
+            conn = sqlite3.connect('automat.db')
+            records_notes = conn.cursor()
+            records_coins = conn.cursor()
+            records_amount = conn.cursor().execute(
+                """
+                SELECT COUNT(*) from monety,banknoty
+                """
+            )
+            temp_sum = records_amount.fetchone()[0]
+            avaliable_cash = [AvailableCash() for _ in range(temp_sum)]
             i = 0
-            for row in self.records_notes:
-                avalible_cash[i][0] = row[2]
-                avalible_cash[i][1] = row[1]
+            for row in records_notes.execute(
+                    """SELECT banknoty.wartosc_w_gr, banknoty.ilosc,banknoty.nominal
+                    FROM banknoty
+                    ORDER BY banknoty.wartosc_w_gr DESC"""
+            ):
+                avaliable_cash[i].value_in_gr = row[VALUE_IN_GR]
+                avaliable_cash[i].amount_of_coins = row[AMOUNT_OF_COINS]
                 i += 1
-            for row in self.records_coins:
-                avalible_cash[i][0] = row[2]
-                avalible_cash[i][1] = row[1]
+            for row in records_coins.execute(
+                    """SELECT monety.wartosc_w_gr,monety.ilosc,monety.nominal
+                    FROM monety
+                    ORDER BY monety.wartosc_w_gr DESC"""
+            ):
+                avaliable_cash[i].value_in_gr = row[VALUE_IN_GR]
+                avaliable_cash[i].amount_of_coins = row[AMOUNT_OF_COINS]
                 i += 1
             for i in self.amount_of_coins:
-                for j, _ in enumerate(avalible_cash):
-                    if i == avalible_cash[j][0]:
-                        avalible_cash[j][1] += 1
+                for j, _ in enumerate(avaliable_cash):
+                    if i == avaliable_cash[j].value_in_gr:
+                        avaliable_cash[j].amount_of_coins += 1
                         break
             change = self.total_cash.get() - self.total_cost.get()
             change_temp = change
             i = 0
             while change > 0:
-                if avalible_cash[i][0] <= change:
-                    temp = change // avalible_cash[i][0]
-                    change -= (avalible_cash[i][0] * temp)
-                    avalible_cash[i][1] -= 1
-                    print(f"{avalible_cash[i][0]} {temp} {change}")
+                if avaliable_cash[i].value_in_gr <= change:
+                    temp = change // avaliable_cash[i].value_in_gr
+                    change -= (avaliable_cash[i].value_in_gr * temp)
+                    avaliable_cash[i].amount_of_coins -= 1
                 else:
                     i += 1
-            self.update_database(avalible_cash)
+            self.update_database(avaliable_cash)
             self.controller.warning(f"Dziękujemy za zakup \n Wydano:"
                                     f" {(change_temp / 100.):.2f} zł", 1)
 
@@ -373,20 +392,23 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         :return: no return
         """
         conn = sqlite3.connect('automat.db')
+        bills_amount = conn.cursor().execute(
+            """
+                           SELECT COUNT(*) from monety,banknoty
+                           """
+        ).fetchone()[0]
         p_cursor = conn.cursor()
         for i, row in enumerate(cash):
-            print(len(self.records_notes))
-            print(f"{row[0]}    {row[1]}")
-            if i < len(self.records_notes):
+            if i < bills_amount:
                 p_cursor.execute("""UPDATE banknoty SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
-                                 (row[0], row[1])
+                                 (row.amount_of_coins, row.value_in_gr)
                                  )
             else:
                 p_cursor.execute("""UPDATE monety
                                 SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
-                                 (row[0], row[1]))
+                                 (row.amount_of_coins, row.value_in_gr))
         conn.commit()
 
     def close_frame(self):

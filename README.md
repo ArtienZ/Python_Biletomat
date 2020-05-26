@@ -2,8 +2,7 @@
 
 ## 1. Opis zadania
   * Automat przechowuje informacje o monetach/banknotach znajdujących się w
-nim (1, 2, 5, 10, 20, 50gr, 1, 2, 5, 10, 20, 50zł) [dziedziczenie: można napisać
-uniwersalną klasę PrzechowywaczMonet po której dziedziczyć będzie automat]
+nim (1, 2, 5, 10, 20, 50gr, 1, 2, 5, 10, 20, 50zł)
   * Okno z listą biletów w różnych cenach (jako przyciski). Wymagane bilety:
 20-minutowy, 40-minutowy, 60-minutowy w wariantach normalnym i ulgowym.
   * Możliwość wybrania więcej niż jednego rodzaju biletu. Możliwość
@@ -17,12 +16,7 @@ monet (domyślnie jedna).
   * Brak reszty/może wydać: wyskakuje okienko z informacją o zakupach, wydaje
     resztę (dolicza wrzucone monety, odlicza wydane jako reszta), wraca do
     wyboru biletów.
-<<<<<<< HEAD
-  * Nie może wydać: wyskakuje okienko z napisem "Tylko odliczona kwota"
-=======
- 1.8. Nie może wydać: wyskakuje okienko z napisem "Tylko odliczona kwota"
->>>>>>> master
-    oraz zwraca włożone monety.
+  * Nie może wydać: wyskakuje okienko z napisem "Tylko odliczona kwota" oraz zwraca włożone monety.
 ## 2. Testy
  * Bilet kupiony za odliczoną kwotę - oczekiwany brak reszty.
  * Bilet kupiony płacąc więcej - oczekiwana reszta.

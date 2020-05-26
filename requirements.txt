@@ -1,3 +1,2 @@
-sqlite3
-tkinter
-sys
+
+#1. Wyskakują błędy ponieważ wymienione biliotekii są już dostarczone razem z Pythonem i nie wymagana jest ich dodatkowa instalacja
