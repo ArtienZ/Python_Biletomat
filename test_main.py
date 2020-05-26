@@ -17,7 +17,9 @@ class Controller():
 
 class test_Main(unittest.TestCase):
     def test_add_coin(self):
+
         temp = main.Payment(tk.Frame(), Controller())
+        temp.total_cost.set(10000)
         temp.add_coin(1000)
         self.assertEqual(temp.amount_of_coins[-1], 1000)
         temp.add_coin(1)

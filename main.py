@@ -325,7 +325,7 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
             for _ in range(0, self.how_many_coins.get()):
                 self.amount_of_coins.append(coin_type)
             self.total_cash.set(sum(self.amount_of_coins))
-            if self.total_cash.get() >= self.controller.total_cost_main.get():
+            if self.total_cash.get() >= self.total_cost.get():
                 self.pay()
             self.in_machine.configure(text=f"Wrzucono już: {(sum(self.amount_of_coins) / 100):.2f} zł")
 
