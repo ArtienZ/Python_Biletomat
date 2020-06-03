@@ -347,42 +347,47 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
                 SELECT ((SELECT COUNT(*) FROM Monety) +
                 (SELECT COUNT(*) FROM Banknoty))
                 """
-            )
-            temp_sum = records_amount.fetchone()[0]
-            avaliable_cash = [AvailableCash() for _ in range(temp_sum)]
+            ).fetchone()[0]
+            available_cash = [AvailableCash() for _ in range(records_amount)]
             i = 0
             for row in cursor.execute(
-                    """SELECT banknoty.wartosc_w_gr, banknoty.ilosc,banknoty.nominal
+                    """SELECT banknoty.wartosc_w_gr, banknoty.ilosc
                     FROM banknoty
                     ORDER BY banknoty.wartosc_w_gr DESC"""
             ):
-                avaliable_cash[i].value_in_gr = row[VALUE_IN_GR]
-                avaliable_cash[i].number_of_coins = row[NUMBER_OF_COINS]
+                available_cash[i].value_in_gr = row[VALUE_IN_GR]
+                available_cash[i].number_of_coins = row[NUMBER_OF_COINS]
                 i += 1
             for row in cursor.execute(
-                    """SELECT monety.wartosc_w_gr,monety.ilosc,monety.nominal
+                    """SELECT monety.wartosc_w_gr,monety.ilosc
                     FROM monety
                     ORDER BY monety.wartosc_w_gr DESC"""
             ):
-                avaliable_cash[i].value_in_gr = row[VALUE_IN_GR]
-                avaliable_cash[i].number_of_coins = row[NUMBER_OF_COINS]
+                available_cash[i].value_in_gr = row[VALUE_IN_GR]
+                available_cash[i].number_of_coins = row[NUMBER_OF_COINS]
                 i += 1
+            for item in available_cash:
+                print(f" {item.number_of_coins}  {item.value_in_gr}", end=' | ')
+            print(" ")
             for i in self.number_of_coins:
-                for j, _ in enumerate(avaliable_cash):
-                    if i == avaliable_cash[j].value_in_gr:
-                        avaliable_cash[j].number_of_coins += 1
+                for j, _ in enumerate(available_cash):
+                    if i == available_cash[j].value_in_gr:
+                        available_cash[j].number_of_coins += 1
                         break
             change = self.total_cash.get() - self.total_cost.get()
             change_temp = change
             i = 0
             while change > 0:
-                if avaliable_cash[i].value_in_gr <= change:
-                    temp = change // avaliable_cash[i].value_in_gr
-                    change -= (avaliable_cash[i].value_in_gr * temp)
-                    avaliable_cash[i].number_of_coins -= 1
+                if available_cash[i].value_in_gr <= change:
+                    temp = change // available_cash[i].value_in_gr
+                    change -= (available_cash[i].value_in_gr * temp)
+                    available_cash[i].number_of_coins -= 1
                 else:
                     i += 1
-            self.update_database(avaliable_cash)
+            for item in available_cash:
+                print(f" {item.number_of_coins}  {item.value_in_gr}", end=' | ')
+            print(" ")
+            self.update_database(available_cash)
             self.controller.warning(f"Dziękujemy za zakup \n Wydano:"
                                     f" {(change_temp / 100.):.2f} zł", 1)
 
@@ -395,17 +400,20 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         conn = sqlite3.connect(DATABASE_NAME)
         bills_amount = conn.cursor().execute(
             """
-                           SELECT COUNT(*) from monety,banknoty
-                           """
-        ).fetchone()[0]
+                SELECT COUNT(*) FROM Banknoty
+            """
+        ).fetchone()[0] + 1
         p_cursor = conn.cursor()
         for i, row in enumerate(cash):
+            print(f" i={i} am={row.number_of_coins} val={row.value_in_gr}", end=' | ')
             if i < bills_amount:
+                print("to sie dzieje 1")
                 p_cursor.execute("""UPDATE banknoty SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
                                  (row.number_of_coins, row.value_in_gr)
                                  )
             else:
+                print("to sie dzieje 2")
                 p_cursor.execute("""UPDATE monety
                                 SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
