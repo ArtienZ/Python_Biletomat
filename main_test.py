@@ -17,6 +17,9 @@ class Controller():
         self.total_cost_zl_main = tk.DoubleVar()
         self.total_cost_main = tk.DoubleVar()
 
+    def warning(self, a, b):
+        print("ITS WARRNING")
+
 
 class TestPayment(unittest.TestCase):
     def setUp(self):
@@ -31,6 +34,13 @@ class TestPayment(unittest.TestCase):
         self.ts.add_coin(-100)
         self.ts.add_coin(100)
         self.assertNotIn(-100, self.ts.number_of_coins)
+
+    def test_pay(self):
+        self.number_of_denominations = 12
+        self.ts.total_cash.set(10000)
+        self.ts.total_cost.set(1000)
+        self.ts.pay()
+        self.assertEqual(self.ts.records_amount, self.number_of_denominations)
 
 
 class TestTicketSelect(unittest.TestCase):

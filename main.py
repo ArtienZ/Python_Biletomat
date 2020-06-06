@@ -342,13 +342,18 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         else:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
-            records_amount = cursor.execute(
+            self.records_amount = cursor.execute(
                 """
                 SELECT ((SELECT COUNT(*) FROM Monety) +
                 (SELECT COUNT(*) FROM Banknoty))
                 """
             ).fetchone()[0]
-            available_cash = [AvailableCash() for _ in range(records_amount)]
+            # DO TESTU
+            # self.records_amount = cursor.execute("""
+            # select count(*) from Monety,Banknoty
+            # """
+            # ).fetchone()[0]
+            available_cash = [AvailableCash() for _ in range(self.records_amount)]
             i = 0
             for row in cursor.execute(
                     """SELECT banknoty.wartosc_w_gr, banknoty.ilosc
@@ -366,9 +371,6 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
                 available_cash[i].value_in_gr = row[VALUE_IN_GR]
                 available_cash[i].number_of_coins = row[NUMBER_OF_COINS]
                 i += 1
-            for item in available_cash:
-                print(f" {item.number_of_coins}  {item.value_in_gr}", end=' | ')
-            print(" ")
             for i in self.number_of_coins:
                 for j, _ in enumerate(available_cash):
                     if i == available_cash[j].value_in_gr:
@@ -384,9 +386,6 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
                     available_cash[i].number_of_coins -= 1
                 else:
                     i += 1
-            for item in available_cash:
-                print(f" {item.number_of_coins}  {item.value_in_gr}", end=' | ')
-            print(" ")
             self.update_database(available_cash)
             self.controller.warning(f"Dziękujemy za zakup \n Wydano:"
                                     f" {(change_temp / 100.):.2f} zł", 1)
@@ -405,15 +404,12 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         ).fetchone()[0] + 1
         p_cursor = conn.cursor()
         for i, row in enumerate(cash):
-            print(f" i={i} am={row.number_of_coins} val={row.value_in_gr}", end=' | ')
             if i < bills_amount:
-                print("to sie dzieje 1")
                 p_cursor.execute("""UPDATE banknoty SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
                                  (row.number_of_coins, row.value_in_gr)
                                  )
             else:
-                print("to sie dzieje 2")
                 p_cursor.execute("""UPDATE monety
                                 SET ilosc=?
                                 WHERE wartosc_w_gr=?""",
