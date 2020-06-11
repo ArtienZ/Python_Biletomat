@@ -19,6 +19,7 @@ class Controller():
 
     def warning(self, a, b):
         print("ITS WARRNING")
+        print(a)
 
 
 class TestPayment(unittest.TestCase):
@@ -41,6 +42,27 @@ class TestPayment(unittest.TestCase):
         self.ts.total_cost.set(1000)
         self.ts.pay()
         self.assertEqual(self.ts.records_amount, self.number_of_denominations)
+        self.ts.total_cash.set(0)
+        self.ts.total_cost.set(0)
+
+    def test_pay_odliczona_kwota(self):
+        self.ts.total_cost.set(1000)
+        self.ts.total_cash.set(1000)
+        self.ts.pay()
+        self.assertEqual(self.ts.change_temp, 0)
+
+    def test_pay_placac_wiecej(self):
+        self.ts.total_cost.set(2000)
+        self.ts.add_coin(5000)
+        self.ts.pay()
+        self.assertEqual(self.ts.change_temp, 3000)
+
+    def test_pay_1gr(self):
+        self.ts.total_cost.set(100)
+        for _ in range(0, 100):
+            self.ts.add_coin(1)
+        self.ts.pay()
+        self.assertEqual(self.ts.change, 0)
 
 
 class TestTicketSelect(unittest.TestCase):
@@ -73,6 +95,12 @@ class TestTicketSelect(unittest.TestCase):
         self.ts.tickets[0].set(10)
         self.ts.count_total_cost()
         self.assertEqual(self.ts.total_cost_zl.get(), 7500)
+
+    def test_two_diff_tickets(self):
+        self.ts.tickets[0].set(1)
+        self.ts.tickets[1].set(1)
+        self.ts.count_total_cost()
+        self.assertEqual(self.ts.total_cost_zl.get(), 2250)
 
 
 if __name__ == '__main__':

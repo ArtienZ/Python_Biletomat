@@ -260,6 +260,7 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
         self.total_cash = tk.DoubleVar()
         self.total_cost = controller.total_cost_main
         self.total_cost_zl = controller.total_cost_zl_main
+        self.coins_in = []
         self.to_pay = tk.Label(self, font="Helvetica 14 bold", textvariable=self.total_cost_zl)
         self.in_machine = tk.Label(self, font="Helvetica 14 bold", text="Wrzucono już: 0.0 zł")
         self.coin_menu()
@@ -376,19 +377,29 @@ class Payment(tk.Frame):  # pylint: disable=too-many-ancestors
                     if i == available_cash[j].value_in_gr:
                         available_cash[j].number_of_coins += 1
                         break
-            change = self.total_cash.get() - self.total_cost.get()
-            change_temp = change
+            self.change = self.total_cash.get() - self.total_cost.get()
+            self.change_temp = self.change
             i = 0
-            while change > 0:
-                if available_cash[i].value_in_gr <= change:
-                    temp = change // available_cash[i].value_in_gr
-                    change -= (available_cash[i].value_in_gr * temp)
-                    available_cash[i].number_of_coins -= 1
+            while self.change > 0 and i < 12:
+                if available_cash[i].value_in_gr <= self.change:
+                    if available_cash[i].number_of_coins>0:
+                        temp = self.change // available_cash[i].value_in_gr
+                        self.change -= (available_cash[i].value_in_gr * temp)
+                        available_cash[i].number_of_coins -= 1
+                    else:
+                        i += 1
                 else:
                     i += 1
-            self.update_database(available_cash)
-            self.controller.warning(f"Dziękujemy za zakup \n Wydano:"
-                                    f" {(change_temp / 100.):.2f} zł", 1)
+            if self.change==0:
+                self.update_database(available_cash)
+                self.controller.warning(f"Dziękujemy za zakup \n Wydano:"
+                                    f" {(self.change_temp / 100.):.2f} zł", 1)
+            else:
+                for i,_ in enumerate(self.number_of_coins):
+                    self.number_of_coins[i]/=100
+                self.controller.warning(f"Nie mozna wydac reszty,\n"
+                                        f" płatność odliczoną kwotą\n"
+                                        f"Zwracam: {self.number_of_coins} zł.", 1)
 
     def update_database(self, cash):
         """
